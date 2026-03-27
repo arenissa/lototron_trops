@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лотерея Вопросов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        /* Лототрон */
+        .lototron-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .lototron-ball {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b, #8b0000);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 -10px 20px rgba(0,0,0,0.3),
+                inset 0 10px 20px rgba(255,255,255,0.3);
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .lototron-ball:hover {
+            transform: scale(1.05);
+        }
+
+        .lototron-ball.active {
+            animation: spin 0.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-card.correct {
+            background: rgba(40, 167, 69, 0.3);
+            border-color: #28a745;
+        }
+
+        .stat-card.incorrect {
+            background: rgba(220, 53, 69, 0.3);
+            border-color: #dc3545;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Кнопки управления */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-correct {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-correct:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-incorrect {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-incorrect:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.6);
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Карточка вопроса */
+        .question-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number {
+            font-size: 1.2em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .answer-section {
+            background: rgba(0,0,0,0.3);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .answer-section.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-label {
+            font-size: 1.1em;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .answer-text {
+            font-size: 1.5em;
+            color: #fff;
+        }
+
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .answer-buttons button {
+            min-width: 180px;
+        }
+
+        /* Результаты */
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-column {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .result-column h3 {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            font-size: 1.3em;
+        }
+
+        .result-column.correct h3 {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .result-column.incorrect h3 {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+        }
+
+        .result-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .result-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .result-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        .result-item.correct {
+            border-left-color: #28a745;
+        }
+
+        .result-item.incorrect {
+            border-left-color: #dc3545;
+        }
+
+        .result-item-question {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .result-item-answer {
+            font-size: 0.9em;
+            color: #a0a0a0;
+        }
+
+        .result-item-time {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Статус */
+        .status-bar {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-ready {
+            background: rgba(40, 167, 69, 0.3);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+
+        .status-active {
+            background: rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .status-complete {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        /* Индикатор лототрона */
+        .lototron-indicator {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2em;
+            color: #a0a0a0;
+        }
+
+        .lototron-indicator span {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎱 ТРЕНАЖЕР ВОПРОСОВ</h1>
+        <p class="subtitle">Лотерея случайных заданий</p>
+
+        <!-- Статистика -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="remainingCount">0</div>
+                <div class="stat-label">Осталось вопросов</div>
+            </div>
+            <div class="stat-card correct">
+                <div class="stat-number" id="correctCount">0</div>
+                <div class="stat-label">✅ Правильных</div>
+            </div>
+            <div class="stat-card incorrect">
+                <div class="stat-number" id="incorrectCount">0</div>
+                <div class="stat-label">❌ Ошибок</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Всего вопросов</div>
+            </div>
+        </div>
+
+        <!-- Статус -->
+        <div class="status-bar status-ready" id="statusBar">🎯 ГОТОВ К РАБОТЕ</div>
+
+        <!-- Лототрон -->
+        <div class="lototron-container">
+            <div class="lototron-ball" id="lototronBall">?</div>
+        </div>
+        <div class="lototron-indicator" id="lototronIndicator">
+            Нажмите <span>🎲 Запустить</span> для начала лотереи
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="controls">
+            <button class="btn-start" id="startBtn" onclick="startQuiz()">🎲 Запустить</button>
+            <button class="btn-reset" onclick="resetQuiz()">🔄 Сбросить</button>
+        </div>
+
+        <!-- Карточка вопроса -->
+        <div class="question-card" id="questionCard">
+            <div class="question-number" id="questionNumber">Вопрос 1 из 10</div>
+            <div class="question-text" id="questionText">Ваш вопрос появится здесь</div>
+            
+            <button class="btn-next" id="showAnswerBtn" onclick="showAnswer()">👁️ Показать ответ</button>
+            
+            <div class="answer-section" id="answerSection">
+                <div class="answer-label">Правильный ответ:</div>
+                <div class="answer-text" id="answerText"></div>
+                
+                <div class="answer-buttons">
+                    <button class="btn-correct" onclick="markAnswer(true)">✅ Правильно</button>
+                    <button class="btn-incorrect" onclick="markAnswer(false)">❌ Ошибся</button>
+                </div>
+            </div>
+
+            <button class="btn-next hidden" id="nextBtn" onclick="nextQuestion()">➡️ Следующий вопрос</button>
+        </div>
+
+        <!-- Результаты -->
+        <div class="results-section">
+            <div class="result-column correct">
+                <h3>✅ Ответили правильно</h3>
+                <ul class="result-list" id="correctList">
+                    <li class="result-item">Пока нет правильных ответов</li>
+                </ul>
+            </div>
+            <div class="result-column incorrect">
+                <h3>❌ Ошиблись</h3>
+                <ul class="result-list" id="incorrectList">
+                    <li class="result-item">Пока нет ошибок</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Использованные вопросы -->
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; text-align: center;">
+            <h3 style="margin-bottom: 10px;">📋 Прогресс</h3>
+            <p id="progressText" style="color: #a0a0a0;">Пока нет использованных вопросов</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 📝 НАСТРОЙКИ ВОПРОСОВ (РЕДАКТИРОВАТЬ ЗДЕСЬ)
+        // ============================================
+        const questions = [
+    // БАЗОВЫЕ ПОНЯТИЯ
+    {
+        text: "Дай определение: что такое троп в художественной речи?",
+        answer: "Троп — это употребление слова или выражения в переносном, образном значении для создания художественного эффекта."
+    },
+    {
+        text: "Дай определение: что такое фигура речи?",
+        answer: "Фигура речи — это особый синтаксический оборот, организующий высказывание необычным образом для усиления выразительности."
+    },
+    {
+        text: "Чем тропы отличаются от фигур речи?",
+        answer: "Тропы связаны с переносным значением слов, а фигуры речи — с особой организацией высказывания (повтор, порядок слов, пропуски и др.)."
+    },
+
+    // СРАВНЕНИЕ
+    {
+        text: "Дай определение сравнения как тропа.",
+        answer: "Сравнение — троп, при котором один предмет или явление сопоставляется с другим по какому‑то признаку."
+    },
+    {
+        text: "Назови типичные средства выражения сравнения.",
+        answer: "Союзы как, словно, будто, точно, подобно, как будто; творительный падеж сравнения без союза."
+    },
+    {
+        text: "Выпиши и назови троп: «Он смелый, как лев».",
+        answer: "Троп — сравнение («смелый, как лев»)."
+    },
+
+    // МЕТАФОРА
+    {
+        text: "Дай определение метафоры.",
+        answer: "Метафора — скрытое сравнение, перенос признаков одного предмета на другой по сходству."
+    },
+    {
+        text: "Приведи пример метафоры из повседневной речи.",
+        answer: "Например: «золотые руки», «железный характер», «лавина писем»."
+    },
+    {
+        text: "Выпиши и назови троп: «Ветер песни поёт в проводах».",
+        answer: "Троп — метафора («ветер песни поёт»)."
+    },
+
+    // ОЛИЦЕТВОРЕНИЕ
+    {
+        text: "Дай определение олицетворения.",
+        answer: "Олицетворение — троп, при котором неодушевлённым предметам или явлениям природы приписываются свойства живого существа."
+    },
+    {
+        text: "Выпиши и назови троп: «Лес шепчет, грустит и вздыхает».",
+        answer: "Троп — олицетворение («лес шепчет, грустит и вздыхает»)."
+    },
+
+    // МЕТОНИМИЯ И СИНЕКДОХА
+    {
+        text: "Дай определение метонимии.",
+        answer: "Метонимия — троп, при котором название одного предмета заменяется названием другого на основе смежности."
+    },
+    {
+        text: "Приведи пример метонимии.",
+        answer: "Например: «съел две тарелки» (вместо «две порции супа»), «читает Пушкина» (вместо «произведения Пушкина»)."
+    },
+    {
+        text: "Дай определение синекдохи.",
+        answer: "Синекдоха — разновидность метонимии, при которой часть обозначает целое или целое — часть."
+    },
+    {
+        text: "Приведи пример синекдохи.",
+        answer: "Например: «Эй, борода!» (вместо «бородатый человек»), «сто голов скота» (вместо «сто животных»)."
+    },
+
+    // ГИПЕРБОЛА И ЛИТОТА
+    {
+        text: "Дай определение гиперболы.",
+        answer: "Гипербола — намеренное преувеличение признаков предмета или явления."
+    },
+    {
+        text: "Приведи пример гиперболы.",
+        answer: "Например: «море слёз», «миллион раз повторял»."
+    },
+    {
+        text: "Дай определение литоты.",
+        answer: "Литота — намеренное преуменьшение признаков предмета или явления."
+    },
+    {
+        text: "Приведи пример литоты.",
+        answer: "Например: «мальчик с пальчик», «комар носа не подточит», «с пылинку ростом»."
+    },
+
+    // ЭПИТЕТ
+    {
+        text: "Дай определение эпитета.",
+        answer: "Эпитет — образное, эмоционально окрашенное определение, подчеркивающее характерный признак предмета."
+    },
+    {
+        text: "Приведи пример эпитета.",
+        answer: "Например: «свинцовые тучи», «золотая осень», «тягучая тишина»."
+    },
+
+    // ОКСЮМОРОН
+    {
+        text: "Дай определение оксюморона.",
+        answer: "Оксюморон — троп, основанный на сочетании логически несовместимых, противоположных по смыслу понятий."
+    },
+    {
+        text: "Приведи пример оксюморона.",
+        answer: "Например: «горячий снег», «живой труп», «звенящая тишина»."
+    },
+
+    // ИРОНИЯ
+    {
+        text: "Дай определение иронии.",
+        answer: "Ирония — троп, при котором истинный смысл высказывания противоположен его буквальному значению."
+    },
+    {
+        text: "Приведи пример иронии в одной фразе.",
+        answer: "Например: «Ну да, конечно, ты опять всё выучил вовремя», сказанное ученику, который явно не готов."
+    },
+
+    // ГРАДАЦИЯ
+    {
+        text: "Дай определение градации как фигуры речи.",
+        answer: "Градация — фигура речи, при которой слова или выражения располагаются с нарастающей или убывающей силой признака."
+    },
+    {
+        text: "Приведи пример градации.",
+        answer: "Например: «просил, умолял, плакал», «шёпот, робкое дыханье, трели соловья»."
+    },
+
+    // АНАФОРА И ЭПИФОРА
+    {
+        text: "Дай определение анафоры.",
+        answer: "Анафора — единоначатие, повторение начальных слов или сочетаний в нескольких соседних строках или фразах."
+    },
+    {
+        text: "Приведи пример анафоры из трёх коротких строк или фраз.",
+        answer: "Например: «Я помню чудное мгновенье… / Я к вам пишу… / Я вас любил…» с повторением «Я» в начале."
+    },
+    {
+        text: "Дай определение эпифоры.",
+        answer: "Эпифора — повторение слов или выражений в конце нескольких соседних строк или фраз."
+    },
+
+    // ИНВЕРСИЯ, РИТОРИЧЕСКИЕ ФИГУРЫ
+    {
+        text: "Дай определение инверсии как фигуры речи.",
+        answer: "Инверсия — фигура речи, состоящая в необычном порядке слов, подчёркивающем значимое слово."
+    },
+    {
+        text: "Дай определение риторического вопроса.",
+        answer: "Риторический вопрос — вопрос, не требующий ответа, используемый для эмоционального усиления высказывания."
+    },
+    {
+        text: "Дай определение риторического восклицания.",
+        answer: "Риторическое восклицание — эмоционально насыщенное высказывание в форме восклицания, передающее сильные чувства автора."
+    },
+    {
+        text: "Дай определение риторического обращения.",
+        answer: "Риторическое обращение — эмоциональное обращение к неодушевлённому предмету, отвлечённому понятию, отсутствующему лицу или читателю."
+    },
+
+    // ПОВТОР И ПАРЦЕЛЛЯЦИЯ
+    {
+        text: "Дай определение повтора как фигуры речи.",
+        answer: "Повтор — фигура речи, основанная на многократном употреблении одного и того же слова или выражения для усиления выразительности."
+    },
+    {
+        text: "Дай определение парцелляции.",
+        answer: "Парцелляция — намеренное членение высказывания на несколько отрезков, оформленных как самостоятельные предложения."
+    },
+
+    // СЛОЖНЫЕ ВОПРОСЫ НА РАЗЛИЧЕНИЕ
+    {
+        text: "Объясни разницу между метафорой и сравнением.",
+        answer: "Сравнение содержит явный показатель сопоставления (как, словно и т.п.), а метафора — скрытое сравнение, без союзов, через перенос признаков."
+    },
+    {
+        text: "Объясни разницу между гиперболой и литотой.",
+        answer: "Гипербола — преувеличение признака, литота — его преуменьшение."
+    },
+    {
+        text: "Объясни разницу между анафорой и эпифорой.",
+        answer: "Анафора — повтор в начале строк или фраз, эпифора — повтор в конце."
+    },
+    {
+        text: "Назови не менее трёх тропов и дай каждому краткую характеристику.",
+        answer: "Например: метафора — скрытое сравнение; сравнение — сопоставление с показателем; эпитет — образное определение; гипербола — преувеличение; литота — преуменьшение."
+    }
+        ];
+        // ============================================
+
+        let availableQuestions = [];
+        let correctAnswers = [];
+        let incorrectAnswers = [];
+        let currentQuestion = null;
+        let questionNumber = 0;
+        let quizStarted = false;
+        let questionCounter = 0;
+
+        function init() {
+            updateStats();
+            document.getElementById('totalCount').textContent = questions.length;
+        }
+
+        function startQuiz() {
+            if (questions.length === 0) {
+                alert('⚠️ Добавьте вопросы в массив questions!');
+                return;
+            }
+
+            availableQuestions = [...questions];
+            correctAnswers = [];
+            incorrectAnswers = [];
+            quizStarted = true;
+            questionCounter = 0;
+
+            document.getElementById('startBtn').textContent = '🎲 Перезапустить';
+            document.getElementById('statusBar').textContent = '🎰 АКТИВНАЯ ЛОТЕРЕЯ';
+            document.getElementById('statusBar').className = 'status-bar status-active';
+            document.getElementById('progressText').textContent = 'В процессе работы...';
+            document.getElementById('lototronBall').classList.add('active');
+
+            nextQuestion();
+            updateStats();
+            updateResultsLists();
+        }
+
+        function nextQuestion() {
+            if (availableQuestions.length === 0) {
+                finishQuiz();
+                return;
+            }
+
+            questionCounter++;
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions[randomIndex];
+            availableQuestions.splice(randomIndex, 1);
+
+            questionNumber = questionCounter;
+
+            document.getElementById('questionCard').classList.add('active');
+            document.getElementById('questionNumber').textContent = `Вопрос ${questionNumber} из ${questions.length}`;
+            document.getElementById('questionText').textContent = currentQuestion.text;
+            document.getElementById('answerText').textContent = currentQuestion.answer;
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            // Анимация лототрона
+            document.getElementById('lototronBall').textContent = questionNumber;
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Выпал вопрос <span>№' + questionNumber + '</span>';
+
+            updateStats();
+        }
+
+        function showAnswer() {
+            document.getElementById('answerSection').classList.add('active');
+            document.getElementById('showAnswerBtn').classList.add('hidden');
+        }
+
+        function markAnswer(isCorrect) {
+            if (!currentQuestion) return;
+
+            const questionData = {
+                text: currentQuestion.text,
+                answer: currentQuestion.answer,
+                number: questionNumber,
+                timestamp: new Date().toLocaleTimeString('ru-RU')
+            };
+
+            if (isCorrect) {
+                correctAnswers.push(questionData);
+            } else {
+                incorrectAnswers.push(questionData);
+            }
+
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.remove('hidden');
+
+            updateStats();
+            updateResultsLists();
+        }
+
+        function finishQuiz() {
+            quizStarted = false;
+            document.getElementById('questionCard').classList.remove('active');
+            document.getElementById('statusBar').textContent = '🏆 ЛОТЕРЕЯ ЗАВЕРШЕНА';
+            document.getElementById('statusBar').className = 'status-bar status-complete';
+            document.getElementById('startBtn').textContent = '🎲 Начать заново';
+            document.getElementById('lototronBall').classList.remove('active');
+            document.getElementById('lototronBall').textContent = '🏆';
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Все вопросы использованы! <span>Молодец!</span>';
+
+            const totalUsed = correctAnswers.length + incorrectAnswers.length;
+            document.getElementById('progressText').textContent = 
+                `Использовано вопросов: ${totalUsed} из ${questions.length} | 
+                 Правильно: ${correctAnswers.length} | Ошибок: ${incorrectAnswers.length}`;
+
+            updateStats();
+        }
+
+        function resetQuiz() {
+            availableQuestions = [];
+            correctAnswers = [];
+            incorrectAnswers = [];
+            currentQuestion = null;
+            questionNumber = 0;
+            questionCounter = 0;
+            quizStarted = false;
+
+            document.getElementById('questionCard').classList.remove('active');
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('startBtn').textContent = '🎲 Запустить';
+            document.getElementById('statusBar').textContent = '🎯 ГОТОВ К РАБОТЕ';
+            document.getElementById('statusBar').className = 'status-bar status-ready';
+            document.getElementById('progressText').textContent = 'Пока нет использованных вопросов';
+            document.getElementById('lototronBall').classList.remove('active');
+            document.getElementById('lototronBall').textContent = '?';
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Нажмите <span>🎲 Запустить</span> для начала лотереи';
+
+            updateStats();
+            updateResultsLists();
+        }
+
+        function updateStats() {
+            document.getElementById('remainingCount').textContent = availableQuestions.length;
+            document.getElementById('correctCount').textContent = correctAnswers.length;
+            document.getElementById('incorrectCount').textContent = incorrectAnswers.length;
+        }
+
+        function updateResultsLists() {
+            const correctList = document.getElementById('correctList');
+            const incorrectList = document.getElementById('incorrectList');
+
+            if (correctAnswers.length > 0) {
+                correctList.innerHTML = correctAnswers.map((q, i) => `
+                    <li class="result-item correct">
+                        <div class="result-item-question">${i + 1}. ${q.text}</div>
+                        <div class="result-item-answer">Ответ: ${q.answer}</div>
+                        <div class="result-item-time">⏰ ${q.timestamp}</div>
+                    </li>
+                `).join('');
+            } else {
+                correctList.innerHTML = '<li class="result-item">Пока нет правильных ответов</li>';
+            }
+
+            if (incorrectAnswers.length > 0) {
+                incorrectList.innerHTML = incorrectAnswers.map((q, i) => `
+                    <li class="result-item incorrect">
+                        <div class="result-item-question">${i + 1}. ${q.text}</div>
+                        <div class="result-item-answer">Ответ: ${q.answer}</div>
+                        <div class="result-item-time">⏰ ${q.timestamp}</div>
+                    </li>
+                `).join('');
+            } else {
+                incorrectList.innerHTML = '<li class="result-item">Пока нет ошибок</li>';
+            }
+        }
+
+        // Инициализация при загрузке
+        init();
+    </script>
+</body>
+</html>
